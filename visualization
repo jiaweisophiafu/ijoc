@@ -1,0 +1,131 @@
+library(magrittr)
+library(httr)
+library(data.table)
+library(igraph)
+library(ggplot2)
+library(RColorBrewer)
+##################################################################################################################################
+##################################################################################################################################
+############ Import Network and Dataset English
+weibo <- read.csv("membership_affiliation_wt.csv", header = T)
+net <- read.csv("mat_freq_filtered_AIDS.csv", header = F)
+net <- as.matrix(net)
+colnames(net) <- weibo$English
+rownames(net) <- weibo$English
+net_graph <- graph_from_adjacency_matrix(net, weighted = TRUE, mode = 'undirected')
+net_graph <- set_vertex_attr(net_graph, name = "Freq", V(net_graph), value = weibo$Frequency)
+net_graph <- set_vertex_attr(net_graph, name = "Cluster", V(net_graph), value = weibo$Cluster)
+net_graph <- simplify(net_graph)
+
+###### Overall Semantic Network English
+select_net <- delete_vertices(net_graph, V(net_graph)[Freq <= 160 | Cluster > 6])
+select_net <- delete_edges(select_net, E(select_net)[weight<140])
+select_net <- delete_vertices(select_net, V(select_net)[which(degree(select_net)==0)])
+
+set.seed(1)
+l <- layout_with_lgl(select_net, maxiter = 500, coolexp = 5)
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+pal <- brewer.pal(8,'Set1')[c(1,2,3,4,5,7)]
+colors <- pal[V(select_net)$Cluster]
+plot(select_net, vertex.shape = "none", vertex.size = 1, vertex.label.family = "Arial",
+     vertex.label.color = colors, edge.color = "gray90",
+     vertex.label.cex = 0.25*V(select_net)$Freq^(1/4), rescale = F,edge.curved = T, frame = F,
+     layout = l*1.25)
+##################################################################################################################################
+##################################################################################################################################
+
+############ Import Network and Dataset Chinese
+Sys.setlocale("LC_ALL","zh_CN.utf-8")
+Chinese <- read.table("Tokens_Chinese.txt", header = F, encoding = "UTF-8", stringsAsFactors=FALSE)
+weibo <- read.csv("membership_affiliation_wt.csv", header = T)
+netc <- read.csv("mat_freq_filtered_AIDS.csv", header = F)
+netc <- as.matrix(netc)
+colnames(netc) <- Chinese$V1
+rownames(netc) <- Chinese$V1
+netc <- graph_from_adjacency_matrix(netc, weighted = TRUE, mode = 'undirected')
+netc<- set_vertex_attr(netc, name = "Freq", V(netc), value = weibo$Frequency)
+netc <- set_vertex_attr(netc, name = "Cluster", V(netc), value = weibo$Cluster)
+netc <- simplify(netc)
+select_net <- delete_vertices(netc, V(netc)[Freq <= 160 | Cluster > 6])
+select_net <- delete_edges(select_net, E(select_net)[weight<140])
+select_net <- delete_vertices(select_net, V(select_net)[which(degree(select_net)==0)])
+
+###### Overall Semantic Network Chinese
+set.seed(1)
+l <- layout_with_lgl(select_net, maxiter = 500, coolexp = 5)
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+pal <- brewer.pal(8,'Set1')[c(1,2,3,4,5,7)]
+colors <- pal[V(select_net)$Cluster]
+plot(select_net, vertex.shape = "none", vertex.size = 1,
+     vertex.label.color = colors, edge.color = "gray90",vertex.label.family = 'STHeiti',
+     vertex.label.cex = 0.25*V(select_net)$Freq^(1/4), rescale = F,edge.curved = T, frame = F,
+     layout = l*1.25)
+
+##################################################################################################################################
+##################################################################################################################################
+## Cluster 1
+set.seed(123)
+sub1 <- induced_subgraph(net_graph, V(net_graph)$Cluster == 1)
+l <- layout_with_lgl(sub1)
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+plot(sub1, vertex.shape = "none",   
+     vertex.label.color = pal[1], edge.color = "gray90", vertex.size = 1, edge.curved = T,
+     vertex.label.cex = 0.3*V(sub1)$Freq^(1/4), rescale = F, vertex.label.family = "Arial",
+     layout = l*1.2) #main = "Cluster 1" set.seed123456789012
+##################################################################################################################################
+## Cluster 2 only label large nodes
+set.seed(123)  
+sub2 <- induced_subgraph(net_graph, V(net_graph)$Cluster == 2)
+sub2 <- delete.vertices(sub2, V(sub2)[Freq <= 80])
+sub2 <- delete_edges(sub2, E(sub2)[weight<20]) 
+#E(sub2)[weight];mean weight = 57.33
+#median(weibo$Frequency) mean is 177
+l <- layout_with_lgl(sub2,maxiter = 500, coolexp = 5)
+l <- norm_coords(l, ymin=-1.0, ymax=1.0, xmin=-1.0, xmax=1.0)
+#par(mfrow=c(2,2), mar=c(0,0,0,0))
+plot(sub2, vertex.shape = "none",   
+     vertex.label.color = pal[2], edge.color = "gray90", vertex.size = 1, edge.curved = T,
+     vertex.label.cex = 0.3*V(sub2)$Freq^(1/4), rescale = F, vertex.label.family = "Arial",
+     layout = l*1.2) 
+##################################################################################################################################
+## Cluster 3
+set.seed(1234)
+sub3 <- induced_subgraph(net_graph, V(net_graph)$Cluster == 3)
+sub3 <- delete.vertices(sub3, V(sub3)[Freq <= 30])
+sub3 <- delete_edges(sub3, E(sub3)[weight<30])
+l <- layout_with_lgl(sub3, maxiter = 500, coolexp = 5)
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+#par(mfrow=c(2,2), mar=c(0,0,0,0)) can divide different graphs into one
+plot(sub3, vertex.shape = "none",   
+     vertex.label.color = pal[3], edge.color = "gray90", vertex.size = 1, edge.curved = T,
+     vertex.label.cex = 0.3*V(sub3)$Freq^(1/4), rescale = F, vertex.label.family = "Arial",
+     layout = l*1.2) 
+##################################################################################################################################
+## Cluster 4
+set.seed(123)
+sub4 <- induced_subgraph(net_graph, V(net_graph)$Cluster == 4)
+l <- layout_with_lgl(sub4, maxiter = 500, coolexp = 5)
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+plot(sub4, vertex.shape = "none",   
+     vertex.label.color = pal[4], edge.color = "gray90", vertex.size = 1, edge.curved = T,
+     vertex.label.cex = 0.3*V(sub4)$Freq^(1/4), rescale = F, vertex.label.family = "Arial",
+     layout = l*1.2) 
+##################################################################################################################################
+## Cluster 5
+sub5 <- induced_subgraph(net_graph, V(net_graph)$Cluster == 5)
+l <- layout_with_lgl(sub5, maxiter = 500, coolexp = 5)
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+plot(sub5, vertex.shape = "none",   
+     vertex.label.color = pal[5], edge.color = "gray90", vertex.size = 1, edge.curved = T,
+     vertex.label.cex = 0.3*V(sub5)$Freq^(1/4), rescale = F, vertex.label.family = "Arial",
+     layout = l*1.2) 
+##################################################################################################################################
+## Cluster 6
+sub6 <- induced_subgraph(net_graph, V(net_graph)$Cluster == 6)
+sub6 <- delete.vertices(sub6, V(sub6)[Freq <= 40])
+l <- layout_with_lgl(sub6, maxiter = 500, coolexp = 5)
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+plot(sub6, vertex.shape = "none",   
+     vertex.label.color = pal[6], edge.color = "gray90", vertex.size = 1, edge.curved = T,
+     vertex.label.cex = 0.3*V(sub6)$Freq^(1/4), rescale = F, vertex.label.family = "Arial",
+     layout = l*1.2) 
