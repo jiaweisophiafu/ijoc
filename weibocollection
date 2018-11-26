@@ -1,0 +1,76 @@
+########### Text Crawling (Weibo) #############
+#-*-coding:utf8-*-
+
+import re
+import string
+import sys
+import os
+import urllib
+import urllib2
+from bs4 import BeautifulSoup
+import requests
+from lxml import etree
+import codecs
+
+reload(sys) 
+sys.setdefaultencoding('utf-8')
+if(len(sys.argv)>=2):
+    user_id = (int)(sys.argv[1])
+else:
+    user_id = (str)(raw_input(u"请输入user_id: "))
+
+cookie = {"Cookie": "_T_WM=98d122db0fbb4ae54d48721dfc0fe1b0; \
+          SUB=_2A256AzwkDeRxGedJ4lUV9C3JyjuIHXVZDERsrDV6PUJbstBeLUvckW1LHetXIcb-XL1nW8iy7qMyvWDkPk03Og..; \
+          SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WW6WDSHsB.6Yl_D3xdJUFco5JpX5o2p; SUHB=0IIkUQiWMtTbPT; \
+          SSOLoginState=1460096116; gsid_CTandWM=4uKHCpOz55yQVRDkXFguy7xB18l"}
+url = 'http://weibo.cn/%s?page=1'%user_id
+
+html = requests.get(url, cookies = cookie).content
+selector = etree.HTML(html)
+pageNum = (int)(selector.xpath('//input[@name="mp"]')[0].attrib['value'])
+
+result = "" 
+urllist_set = set()
+word_count = 1
+image_count = 1
+
+print u'爬虫准备就绪...'
+
+for page in range(1,pageNum+1):
+
+  #获取lxml页面
+  url = 'http://weibo.cn/%s?page=%d'%(user_id,page) 
+  lxml = requests.get(url, cookies = cookie).content
+
+  #文字爬取
+  selector = etree.HTML(lxml)
+  content = selector.xpath('//span[@class="ctt"]')
+  content1 = selector.xpath('//span[@class="cpt"]')
+  print page, pageNum
+  for each in content:
+    text = each.xpath('string(.)')
+    if word_count>=4:
+      text = "%d :"%(word_count-3) +text+ "\n\n"
+    else :
+      text = text+"\n\n"
+    result = result + text
+    word_count += 1
+    print word_count
+  for each1 in content1:
+    text = each1.xpath('string(.)')
+    if word_count>=4:
+      text = "%d :"%(word_count-3) +text+ "\n\n"
+    else :
+      text = text+"\n\n"
+    result = result + text
+    word_count += 1
+    print word_count
+
+fo = codecs.open("%s"%user_id, "w", "utf-8")
+fo.write(result)
+word_path=os.getcwd()+'/%s'%user_id
+print u'文字微博爬取完毕'
+
+print u'原创微博爬取完毕，共%d条，保存路径%s'%(word_count-4,word_path)
+ 
+
