@@ -1,0 +1,23 @@
+library(magrittr)
+library(httr)
+library(data.table)
+library(igraph)
+
+weibo <- read.table("tokens_base_filtered.txt", header = F)
+net <- read.csv("mat_freq_filtered.csv", header = F)
+net <- as.matrix(net)
+
+net_graph <- graph_from_adjacency_matrix(net, weighted = TRUE, mode = 'undirected')
+
+##WALKTRAP METHOD
+cluster<-cluster_walktrap(net_graph) 
+member <- membership(cluster)  
+write.csv(as.vector(member), "membership_affiliation.csv")
+length(sizes(cluster)) 
+sizes(cluster) 
+
+plot(cluster, net_graph, col = V(net_graph)$color, layout = layout_with_fr(net_graph), vertex.size=2)  #vertex.label=NA
+plot(cluster, net_graph, col = V(net_graph)$color, vertex.label=NA, layout = layout_with_dh(net_graph), vertex.size=2)  #vertex.label=NA
+plot(cluster, net_graph, col = V(net_graph)$color, layout = layout_with_drl(net_graph), vertex.size=2)  #vertex.label=NA
+plot(cluster, net_graph, col = V(net_graph)$color, layout = layout_with_kk(net_graph), vertex.size=0.5)  #vertex.label=NA
+
